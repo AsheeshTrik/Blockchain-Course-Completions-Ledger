@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Completion</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.3.5/dist/web3.min.js"></script>
+</head>
+
+<body>
+    <h1>Register Completion</h1>
+    <label for="courseName">Course Name:</label>
+    <input type="text" id="courseName">
+    <label for="institution">Institution:</label>
+    <input type="text" id="institution">
+    <button onclick="registerCompletion()">Register Completion</button>
+    <hr>
+    <h2>Total Completions</h2>
+    <div id="totalCompletions"></div>
+    <hr>
+    <h2>Completions List</h2>
+    <ul id="completionsList"></ul>
+
+    <script>
+        // Initialize web3
+        //const web3 = new Web3(Web3.givenProvider);
+        const web3 = new Web3('http://localhost:7545');
+        // Contract ABI (replace with your contract ABI)
+        const abi = [
+            // Contract ABI here
+            {
+                "constant": true,
+                "inputs": [
+                    {
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "completions",
+                "outputs": [
+                    {
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "name": "courseName",
+                        "type": "string"
+                    },
+                    {
+                        "name": "institution",
+                        "type": "string"
+                    },
+                    {
+                        "name": "completionDate",
+                        "type": "uint256"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function",
+                "signature": "0x77eabb40"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "name": "courseName",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "name": "institution",
+                        "type": "string"
+                    },
+                    {
+                        "indexed": false,
+                        "name": "completionDate",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "CourseCompleted",
+                "type": "event",
+                "signature": "0x161683f4aa7659be0da2a1b5977cedcdfdbb99a0670eee225aaae5033b10cd9a"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    {
+                        "name": "_courseName",
+                        "type": "string"
+                    },
+                    {
+                        "name": "_institution",
+                        "type": "string"
+                    }
+                ],
+                "name": "registerCompletion",
+                "outputs": [],
+                "payable": false,
+                "stateMutability": "nonpayable",
+                "type": "function",
+                "signature": "0xb6f064e6"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "getTotalCompletions",
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function",
+                "signature": "0xe4815c48"
+            },
+            {
+                "constant": true,
+                "inputs": [
+                    {
+                        "name": "_index",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "getCompletion",
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "address"
+                    },
+                    {
+                        "name": "",
+                        "type": "string"
+                    },
+                    {
+                        "name": "",
+                        "type": "string"
+                    },
+                    {
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "payable": false,
+                "stateMutability": "view",
+                "type": "function",
+                "signature": "0xbb39f56f"
+            }
+        ];
+
+        // Contract address (replace with your contract address)
+        const contractAddress = '0x61d4Fa02B545dCC67D700Fcb83bf23fFC9E61C28';
+
+        // Instantiate contract
+        const contract = new web3.eth.Contract(abi, contractAddress);
+
+        async function registerCompletion() {
+            const courseName = document.getElementById('courseName').value;
+            const institution = document.getElementById('institution').value;
+
+            try {
+                // Call registerCompletion function on the contract
+                const accounts = await web3.eth.getAccounts();
+                console.log(accounts);
+                contract.methods.registerCompletion(courseName, institution)
+                    .send({ from: accounts[0], gas: 2000000 }) // Increase gas limit
+                    .then((receipt) => {
+                        console.log('Transaction receipt:', receipt);
+                    })
+                    .catch((error) => {
+                        console.error('Error:', error);
+                    });
+
+
+                alert('Completion registered successfully!');
+            } catch (error) {
+                console.error('Error registering completion:', error);
+                alert('Error registering completion. Please check the console for details.');
+            }
+        }
+        // Function to get total completions
+        async function getTotalCompletions() {
+            try {
+                // Call getTotalCompletions function on the contract
+                const totalCompletions = await contract.methods.getTotalCompletions().call();
+                document.getElementById('totalCompletions').innerText = `Total Completions: ${totalCompletions}`;
+            } catch (error) {
+                console.error('Error getting total completions:', error);
+            }
+        }
+
+        // Function to get completions list
+        async function getCompletionsList() {
+            try {
+                // Call getTotalCompletions function on the contract
+                const totalCompletions = await contract.methods.getTotalCompletions().call();
+                const completionsList = document.getElementById('completionsList');
+                completionsList.innerHTML = ''; // Clear previous list
+
+                for (let i = 0; i < totalCompletions; i++) {
+                    // Call getCompletion function on the contract
+                    const completion = await contract.methods.getCompletion(i).call();
+                    const listItem = document.createElement('li');
+                    listItem.innerText = `User: ${completion[0]}, Course: ${completion[1]}, Institution: ${completion[2]}, Date: ${new Date(completion[3] * 1000).toLocaleString()}`;
+                    completionsList.appendChild(listItem);
+                }
+            } catch (error) {
+                console.error('Error getting completions list:', error);
+            }
+        }
+
+        // Call functions when the page loads
+        window.onload = async function () {
+            await getTotalCompletions();
+            await getCompletionsList();
+        };
+    </script>
+</body>
+
+</html>
